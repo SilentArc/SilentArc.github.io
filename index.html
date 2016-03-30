@@ -1,0 +1,296 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Simple Logic Puzzle</title>
+
+		<style type="text/css">
+			body { font-family: Calibri, Verdana, Tahoma, Optima, Arial, sans-serif; font-size: 16px; background-color: #EEEEEE; cursor: inherit;}
+			.container { display: flex; flex-flow: column; padding: 1px; }
+			.outline { border: 1px solid #999999; border-radius: 5px 5px 5px 5px; }
+			#display { display: flex; flex-flow: column; padding: 6px; margin: 1px; }
+
+			#lights { display: flex; flex-flow: row; flex-wrap: wrap; justify-content: center; }
+			.light { transition: 0.2s; height: 30px; width: 30px; border: 1px solid grey; border-radius: 15px 15px 15px 15px; margin: 1px; }
+
+			#switches { display: flex; flex-flow: row; flex-wrap: wrap; justify-content: center; }
+			.switch { transition: 1s; height: 30px; width: 20px; border: 1px solid grey; cursor: pointer; background: linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 50%, #CCCCCC 100%); margin: 2px; } 
+				.switch.on { background: linear-gradient(to bottom, #CCCCCC 0%,#FFFFFF 50%,#FFFFFF 100%); }
+				.switch.mouseover { border-color: white; }
+
+			#options { display: flex; align-content: center; padding: 6px; margin: 1px; }
+			.ui { padding: 2px; margin: 2px; -moz-user-select: none; -khtml-user-select: none; -webkit-user-select: none; user-select: none; }
+			.crement { cursor: pointer; }
+			.nscursor { cursor: ns-resize; }
+			#slider { z-index: 1; position: absolute; width: 20px; border: 1px solid black; background-color: #DDDDDD; }
+			#marker { z-index: 2; position: absolute; height: 18px; width: 18px; border: 1px solid black; border-radius: 3px 3px 3px 3px; background-color: white;cursor: none }
+
+			#console { padding: 6px; margin: 1px; overflow: hidden; }
+			.message { width: 100%; }
+		</style>
+		<style type="text/css" id="lightStyle">
+			.light { background-color: darkgoldenrod; }
+			.light.on { background-color: papayawhip; }
+		</style>
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+		<script type="text/javascript">
+			var lights = {
+				value: 10,
+				min: 10,
+				max: 31
+			}
+			var switches = {
+				value: 5,
+				min: 5,
+				max: 31
+			}
+			var masks = [];
+			var solution = [];
+			var flicks = 0;
+			var solved = false;
+
+			var lightColours = {
+				'beige': {
+					'on': 'papayawhip',
+					'off': 'darkgoldenrod'
+				},
+				'red': {
+					'on': 'red',
+					'off': 'darkred'
+				},
+				'green': {
+					'on': 'springgreen',
+					'off': 'green'
+				},
+				'blue': {
+					'on': 'deepskyblue',
+					'off': 'navy'
+				}
+			}
+
+			function drawDisplay(){
+				$( '#display' ).append( '<div id="lights"></div>' );
+				for ( var index  = 0; index < lights.value; index++ ) $( '#lights' ).append( '<div class="light" data-light="' + index + '"></div>' );
+				$( '#display' ).append( '<div id="switches"></div>' );
+				for ( var index  = 0; index < switches.value; index++ ) $( '#switches' ).append( '<div class="switch" data-switch="' + index + '"></div>' );
+
+				$( '.switch' ).on( 'mouseenter', function() {
+					$( this ).addClass( 'mouseover' ); 
+				}).on( "mouseleave", function() {
+					$( this ).removeClass( 'mouseover' );
+				});
+
+				$( '.switch' ).on( 'click', function ( event ){
+					event.preventDefault();
+					$( this ).toggleClass( 'on' );
+					timer.start();
+					flicks++;
+					toggleMask( $( this ).attr( 'data-switch' ) );
+					testSolution();
+				});
+				generate();
+			}
+
+			function toggleMask( switchNumber ){
+				var splitMask = masks[ switchNumber ].toString( 2 ).split('').reverse();
+				for ( var index = 0; index < splitMask.length; index++ ){
+					if ( splitMask[ index ] === '1' ) $( 'div.light[data-light=' + index + ']' ).toggleClass( 'on' );
+				}
+			}
+
+			function testSolution(){
+				var flicked = [];
+				$( '.switch.on' ).each( function(){
+					flicked.push( $( this ).attr( 'data-switch' ) );
+				});
+				if ( flicked.sort().join(',') === solution.sort().join(',') ) timer.stop();
+			}
+
+			function generate(){
+				masks = [];
+				for ( var index = 0; index < switches.value; index++) masks[ index ] = 0;	// zero masks
+				var chosenSwitchCount = Math.floor( Math.random() * ( switches.value - 3 ) ) + 3;
+				solution = [];
+				while ( solution.length < chosenSwitchCount ){	// pick switches for solution
+					var pick = Math.floor( Math.random() * switches.value );
+					if ( solution.indexOf( pick ) === -1 ) solution.push( pick );
+				}
+				for ( var index = 0; index < lights.value; index++ ){	// share out the solution between chosen switches
+					masks[ solution[ Math.floor( Math.random() * solution.length ) ] ] += Math.pow( 2, index );
+					if ( Math.random() < 0.2 ) {	// throw in some random flips
+						var first = Math.floor( Math.random() * solution.length );
+						var second = first;
+						while ( first === second ) second = Math.floor( Math.random() * solution.length );
+						var value = Math.pow( 2, index );
+						masks[ solution[ first ] ] ^= value;
+						masks[ solution[ second ] ] ^= value;
+					}
+				}
+				for ( var index = solution.length - 1; index >= 0 ; index-- ){	// flush any zero masks from solution
+					if ( masks[ solution[ index ] ] === 0 ) solution.splice( index, 1 );
+				}
+				for ( var index = 0; index < switches.value; index++ ){	// fill out switches not part of solution
+					var done = false;
+					while ( done === false ){
+						if ( solution.indexOf( index ) !== -1 ) done = true;
+						else {
+							var fill = Math.floor( Math.random() * ( Math.pow( 2, lights.value ) - 1 ) ) + 1;
+							if ( masks.indexOf( fill ) === -1 ){
+								masks[ index ] = fill;
+								done = true;
+							}
+						}
+					}
+				}
+				solved = false;
+			}
+
+			var timer = {
+				stamp: null,
+				start: function(){
+					if ( timer.stamp === null && solved === false ) {
+						log( 'Timer started!' );
+						timer.stamp = Date.now();
+					}
+				},
+				stop: function(){
+					if ( solved === false ){
+						log( 'You finished in ' + ( ( Date.now() - timer.stamp ) / 1000 ) + ' seconds taking ' + flicks + ' flicks' );
+						timer.stamp = null;
+						flicks = 0;
+						solved = true;
+					}
+				},
+				reset: function(){
+					if ( timer.stamp !== null ){
+						log( 'Timer reset after ' + ( ( Date.now() - timer.stamp ) / 1000 ) + ' seconds' );
+						timer.stamp = null;
+						flicks = 0;
+					}
+				}
+			}
+
+			function log( message ){
+				if ( $( '#console>div' ).length >= 10 ) $( '#console>:last-child' ).remove();
+				$( '#console' ).prepend( '<div class="message">' + message + '</div>' );
+			}
+
+			function init(){
+				$( '#console' ).css( 'height', parseInt( $( '#console' ).css( 'line-height' ) ) * 10 );
+
+				$( '#colourChanger' ).on( 'change', function ( event ){
+					event.preventDefault();
+					var newColour = $( '#colourChanger' ).val();
+					if ( typeof lightColours[ newColour ] === 'object' ) $( '#lightStyle' ).replaceWith( $( '<style type="text/css" id="lightStyle"> .light { background-color: ' + lightColours[ newColour ].off + '; } .light.on { background-color: ' + lightColours[ newColour ].on + '; }</style>' ) );
+					else log( newColour + ' is not a valid colour selection.' );
+				});
+
+				$( '#new' ).on( 'click', function ( event ){
+					event.preventDefault();
+					timer.reset();
+					$( '#display' ).empty();
+					drawDisplay();
+				});
+
+				$( '.crement' ).on( 'click', function ( event ){
+					event.preventDefault();
+					var data = $( this ).attr( 'data-var' );
+					if ( data === 'incrementlights' && lights.value < lights.max ) lights.value++;
+					else if ( data === 'decrementlights' && lights.value > lights.min ) lights.value--;
+					else if ( data === 'incrementswitches' && switches.value < switches.max ) switches.value++;
+					else if ( data === 'decrementswitches' && switches.value > switches.min ) switches.value--;
+					$( '#uiLights' ).html( lights.value );
+					$( '#uiSwitches' ).html( ( '0' + switches.value ).slice( -2 ) );
+				});
+
+				$( '#uiLights' ).on( 'mousedown', function ( event ){
+					event.preventDefault();
+					var slider = '<div id="slider"><div id="marker">' + lights.value + '</div></div>';
+					$( slider ).appendTo( 'body' ).css( {
+						'height': lights.max + 10,
+						'left': Math.floor( event.pageX - 10 ),
+						'top': Math.floor( event.pageY - ( lights.max - lights.value ) - 10 )
+					});
+					$( '#marker' ).css({
+						'top': lights.max - lights.value
+					});
+					var origin = event.pageY;
+					$( '#marker' ).on( 'mousemove', function ( event ){
+						var shift = origin - event.pageY;
+						if ( lights.value + shift <= lights.max && lights.value + shift >= lights.min ){
+							lights.value += shift;
+							$( this ).css( 'top', lights.max - lights.value );
+							$( '#marker' ).html( lights.value );
+						}
+						origin = event.pageY;
+					}).on( 'mouseleave mouseup', function ( event ){
+						$( '#uiLights' ).html( lights.value );
+						$( '#slider' ).remove();
+					});
+				});
+
+				$( '#uiSwitches' ).on( 'mousedown', function ( event ){
+					event.preventDefault();
+					var slider = '<div id="slider"><div id="marker">' + switches.value + '</div></div>';
+					$( slider ).appendTo( 'body' ).css( {
+						'height': switches.max + 15,
+						'left': Math.floor( event.pageX - 10 ),
+						'top': Math.floor( event.pageY - ( switches.max - switches.value ) - 10 )
+					});
+					$( '#marker' ).css({
+						'top': switches.max - switches.value
+					});
+					var origin = event.pageY;
+					$( '#marker' ).on( 'mousemove', function ( event ){
+						var shift = origin - event.pageY;
+						if ( switches.value + shift <= switches.max && switches.value + shift >= switches.min ){
+							switches.value += shift;
+							$( this ).css( 'top', switches.max - switches.value );
+							$( '#marker' ).html( ( '0' + switches.value ).slice( -2 ) );
+						}
+						origin = event.pageY;
+					}).on( 'mouseleave mouseup', function ( event ){
+						$( '#uiSwitches' ).html( ( '0' + switches.value ).slice( -2 ) );
+						$( '#slider' ).remove();
+					});
+				});
+
+				$( '#uiLights' ).html( lights.value );
+				$( '#uiSwitches' ).html( ( '0' + switches.value ).slice( -2 ) );
+				drawDisplay();
+				log( 'Flick the switches on and off until all the lights come on' );
+			}
+			$( document ).ready( init );
+		</script>
+	</head>
+	<body>
+		<div class="container outline">
+			<div id="options" class="outline">
+				<div class="outline ui">
+					<span>Lights: </span>				
+					<span id="uiLights" class="nscursor"></span>
+					<span class="crement" data-var="decrementlights">&#8854;</span>
+					<span class="crement" data-var="incrementlights">&#8853;</span>	
+				</div>
+				<div class="outline ui">
+					<span>Switches:</span>
+					<span id="uiSwitches" class="nscursor"></span>
+					<span class="crement" data-var="decrementswitches">&#8854;</span>
+					<span class="crement" data-var="incrementswitches">&#8853;</span>
+				</div>
+				<button id="new">Start New</button>
+				<div class="outline ui">
+					<select id="colourChanger">
+						<option value="beige">Beige</option>
+						<option value="red">Red</option>
+						<option value="green">Green</option>
+						<option value="blue">Blue</option>
+					</select>
+				</div>
+			</div>
+			<div id="display" class="outline"></div>
+			<div id="console" class="outline"></div>
+		</div>
+	</body>
+</html>
