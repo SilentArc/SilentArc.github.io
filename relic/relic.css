@@ -1,0 +1,25 @@
+body { font-family: Calibri, Verdana, Tahoma, Optima, Arial, sans-serif; }
+.container { display: flex; flex-direction: column; max-width: 400px; }
+.navBar { display: flex; flex-direction: row; justify-content: end; }
+.navButton{ font-size: 24px; }
+.outline { border: 1px solid #999999; border-radius: 5px 5px 5px 5px; padding: 1px; margin: 1px; }
+.tile { display: flex; flex-direction: column; }
+.tableRow { display: flex; flex-direction: row; }
+.tableColumn { display: flex; flex-direction: column; }
+
+.text { font-size: 16px; }
+.tier { font-size: 24px; }
+
+.options { display: flex; flex-direction: column; }
+.option { background-color: honeydew; }
+.active { background-color: lightgreen; }
+.nyi { background-color: lightcoral; }
+
+.relic { font-size: 24px; }
+.selected { background-color: lightgreen; }
+.go { font-size: 24px; background-color: honeydew; }
+
+.itemRow{ display: flex; flex-direction: row; justify-content: center; }
+.itemValue { width: 70px; display: inline-flex; justify-content: end; padding: 2px; border: 1px solid #999999;}
+.itemName { display: inline-flex; flex: 1 1; justify-content: start; padding: 2px; border: 1px solid #999999;}
+.vaulted { font-weight: bold; }
