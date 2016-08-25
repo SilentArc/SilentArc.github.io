@@ -15,6 +15,7 @@ body { font-family: Calibri, Verdana, Tahoma, Optima, Arial, sans-serif; }
 .active { background-color: lightgreen; }
 
 .relic { font-size: 24px; cursor: pointer; text-align: center; }
+.info { font-size: 12px; }
 .selected { background-color: lightgreen; }
 .go { flex: 1 1; font-size: 24px; background-color: honeydew; cursor: pointer; text-align: center; }
 

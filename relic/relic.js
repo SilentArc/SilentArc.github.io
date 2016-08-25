@@ -11,7 +11,7 @@ var settings = {
 
 function formatStyles(){
 	if ( settings.valueStyles === null ){
-		var defaultColours = [ '#e6e6fa', '#afeeee', '#e0ffff', '#f5fffa', '#ffefd5', '#ffe4e1', '#ffc0cb' ];
+		var defaultColours = [ '#e6e6fa', '#afeeee', '#e0ffff', '#f5fffa', '#ffefd5', '#ffe4e1', '#ffc0cb', '#ffffff' ];
 		settings.valueStyles = {};
 		for ( let index = 0; index < dataSet.values.length; index++ ){
 			settings.valueStyles[ dataSet.values[ index ] ] = ( index < defaultColours.length ? defaultColours[ index ] : '#eee8aa' );
@@ -47,9 +47,11 @@ if ( typeof storedSettings === 'string' ) {
 }
 formatStyles();
 
+var currentTier = null;
+
 var content = {
 	'tier': function(){
-		$( '#tile' ).html( '<div class="text">Select a tier to begin:</div><div class="tier outline" data-value="Lith">LITH</div><div class="tier outline" data-value="Meso">MESO</div><div class="tier outline" data-value="Neo">NEO</div><div class="tier outline" data-value="Axi">AXI</div><div class="navButton outline" data-value="vaulted">Vaulted Relic List</div>' );
+		$( '#tile' ).html( '<div class="text">Select a tier to begin:</div><div class="tier outline" data-value="Lith">LITH</div><div class="tier outline" data-value="Meso">MESO</div><div class="tier outline" data-value="Neo">NEO</div><div class="tier outline" data-value="Axi">AXI</div>' );
 		currentTier = null;
 	},
 	'info': function(){
@@ -72,23 +74,53 @@ var content = {
 		$( '#tile' ).html( html );
 		currentTier = null;
 	},
-	'vaulted': function(){
-		let html = '<div class="text">Vaulted Relic List:</div>';
-		for ( let index = 0; index < dataSet.vaulted.length; index++ ) html += '<div class="text">' + dataSet.vaulted[ index ] + '</div>';
-		$( '#tile' ).html( html );
-		currentTier = null;
-	},
 	'relicList': function( tier ){
 		currentTier = tier;
 		let list = Object.keys( dataSet[ tier ] ).sort();
-		let html = '<div class="text">Select 4 relics or fewer and the go button to get a listing:</div>';
-		for ( let index = 0; index < list.length; index++ ) html += '<div class="relic outline" data-value="' + list[ index ] + '">' + list[ index ] + '</div>';
+		let html = '<div class="text">Select 4 ' + currentTier + ' relics or fewer and the go button to get a listing:</div>';
+		for ( let index = 0; index < list.length; index++ ) html += '<div class="relic outline" data-value="' + list[ index ] + '">' + list[ index ] + ( dataSet[ currentTier ][ list[ index ] ].vaulted === true ? ' <span class="info">( vaulted )</span>' : '' ) + '</div>';
 		html += '<div class="tableRow"><div id="all" class="go outline">All</div><div id="go" class="go outline">Go</div></div>';
+		$( '#tile' ).html( html );
+	},
+	'listing': function(){
+		let itemList = [];
+		$( '.selected' ).each( function(){
+			let keys = Object.keys( dataSet[ currentTier ][ $( this ).attr( 'data-value' ) ].list );
+			for ( let index = 0; index < keys.length; index++ ){
+				let insert = dataSet[ currentTier ][ $( this ).attr( 'data-value' ) ].list[ keys[ index ] ];
+				insert.name = keys[ index ];
+				itemList.push( insert );
+			}
+		});
+		itemList.sort( function( a, b ){
+			let aValue = null;
+			let bValue = null;
+			if ( settings.sortByValue === true ){
+				aValue = ( settings.sortByCrafted === true && typeof a.craftedValue === 'number' ? a.craftedValue : ( typeof a.value === 'number' ? a.value : 0 ) );
+				bValue = ( settings.sortByCrafted === true && typeof b.craftedValue === 'number' ? b.craftedValue : ( typeof b.value === 'number' ? b.value : 0 ) );
+				if ( aValue < bValue ) return 1;
+				if ( aValue > bValue ) return -1;
+			}
+			aValue = a.name.toLowerCase();
+			bValue = b.name.toLowerCase();
+			if ( aValue > bValue ) return 1;
+			if ( aValue < bValue ) return -1;
+			return 0;
+		});
+	
+		let html = '<div class="text">Table for ' + currentTier + ': ' + $( '.selected' ).map( function() { return $( this ).attr( 'data-value' ) } ).get().join( ', ' ); + '</div>';
+		for ( let index = 0; index < itemList.length; index++ ){
+			if ( settings.ignoreLowest !== true || ( settings.sortByCrafted === true && typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].craftedValue : itemList[ index ].value ) !== dataSet.values[ 0 ] ){
+				html += '<div class="itemRow valueStyle' + ( settings.sortByCrafted === true && typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].craftedValue : ( typeof itemList[ index ].value === 'undefined' ? 'NA' : itemList[ index ].value ) ) + ( settings.showVaulted === true && itemList[ index ].vaulted === true ? ' vaulted' : '' ) + '">'
+					html += '<div class="itemValue">' + ( typeof itemList[ index ].craftedValue === 'number' && itemList[ index ].craftedValue !== itemList[ index ].value ? itemList[ index ].value + ' / ' + itemList[ index ].craftedValue : ( typeof itemList[ index ].value === 'undefined' ? 'N/A' : itemList[ index ].value ) ) + '</div>';
+					html += '<div class="itemName">' + itemList[ index ].name + ( settings.showRarity === true ? ' ( ' + itemList[ index ].rarity + ' )' : '' ) + '</div>';
+				html += '</div>';
+			}
+		}
+		html += '<div id="return" class="outline" data-value="' + currentTier + '">Back to ' + currentTier + '</div>';
 		$( '#tile' ).html( html );
 	}
 };
-
-var currentTier = null;
 
 $( document ).ready( function(){
 	$( '#tile' ).on( 'click', '.tier,#return', function( event ){
@@ -99,19 +131,18 @@ $( document ).ready( function(){
 	$( '#tile' ).on( 'click', '.relic', function( event ){
 		event.preventDefault();
 		$( this ).toggleClass( 'selected' );
-
-		if ( $( '.selected' ).length === 4 ) createList();
+		if ( $( '.selected' ).length === 4 ) content.listing();
 	});
 
 	$( '#tile' ).on( 'click', '#go', function( event ){
 		event.preventDefault();
-		if ( $( '.selected' ).length > 0 ) createList();
+		if ( $( '.selected' ).length > 0 ) content.listing();
 	});
 
 	$( '#tile' ).on( 'click', '#all', function( event ){
 		event.preventDefault();
 		$( '.relic' ).addClass( 'selected' );
-		createList();
+		content.listing();
 	});
 
 	$( '#tile' ).on( 'click', '.option', function( event ){
@@ -136,42 +167,3 @@ $( document ).ready( function(){
 
 	content[ 'tier' ]();
 });
-
-function createList (){
-	let itemList = [];
-	$( '.selected' ).each( function(){
-		let keys = Object.keys( dataSet[ currentTier ][ $( this ).attr( 'data-value' ) ] );
-		for ( let index = 0; index < keys.length; index++ ){
-			let insert = dataSet[ currentTier ][ $( this ).attr( 'data-value' ) ][ keys[ index ] ];
-			insert.name = keys[ index ];
-			itemList.push( insert );
-		}
-	});
-	itemList.sort( function( a, b ){
-		let aValue = null;
-		let bValue = null;
-		if ( settings.sortByValue === true ){
-			aValue = ( settings.sortByCrafted === true && typeof a.craftedValue === 'number' ? a.craftedValue : a.value );
-			bValue = ( settings.sortByCrafted === true && typeof b.craftedValue === 'number' ? b.craftedValue : b.value );
-			if ( aValue < bValue ) return 1;
-			if ( aValue > bValue ) return -1;
-		}
-		aValue = a.name.toLowerCase();
-		bValue = b.name.toLowerCase();
-		if ( aValue > bValue ) return 1;
-		if ( aValue < bValue ) return -1;
-		return 0;
-	});
-
-	let html = '<div class="text">Table for ' + currentTier + ': ' + $( '.selected' ).map( function() { return $( this ).attr( 'data-value' ) } ).get().join( ', ' ); + '</div>';
-	for ( let index = 0; index < itemList.length; index++ ){
-		if ( settings.ignoreLowest !== true || ( settings.sortByCrafted === true && typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].craftedValue : itemList[ index ].value ) !== dataSet.values[ 0 ] ){
-			html += '<div class="itemRow valueStyle' + ( settings.sortByCrafted === true && typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].craftedValue : itemList[ index ].value ) + ( settings.showVaulted === true && itemList[ index ].vaulted === true ? ' vaulted' : '' ) + '">'
-				html += '<div class="itemValue">' + ( typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].value + ' / ' + itemList[ index ].craftedValue : itemList[ index ].value ) + '</div>';
-				html += '<div class="itemName">' + itemList[ index ].name + ( settings.showRarity === true ? ' ( ' + itemList[ index ].rarity + ' )' : '' ) + '</div>';
-			html += '</div>';
-		}
-	}
-	html += '<div id="return" class="outline" data-value="' + currentTier + '">Back to ' + currentTier + '</div>';
-	$( '#tile' ).html( html );
-}
