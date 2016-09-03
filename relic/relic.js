@@ -110,11 +110,17 @@ var content = {
 	
 		let html = '<div class="text">Table for ' + currentTier + ': ' + $( '.selected' ).map( function() { return $( this ).attr( 'data-value' ) } ).get().join( ', ' ); + '</div>';
 		for ( let index = 0; index < itemList.length; index++ ){
-			if ( settings.ignoreLowest !== true || ( settings.sortByCrafted === true && typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].craftedValue : itemList[ index ].value ) !== dataSet.values[ 0 ] ){
-				html += '<div class="itemRow valueStyle' + ( settings.sortByCrafted === true && typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].craftedValue : ( typeof itemList[ index ].value === 'undefined' ? 'NA' : itemList[ index ].value ) ) + ( settings.showVaulted === true && itemList[ index ].vaulted === true ? ' vaulted' : '' ) + '">'
-					html += '<div class="itemValue">' + ( typeof itemList[ index ].craftedValue === 'number' && itemList[ index ].craftedValue !== itemList[ index ].value ? itemList[ index ].value + ' / ' + itemList[ index ].craftedValue : ( typeof itemList[ index ].value === 'undefined' ? 'N/A' : itemList[ index ].value ) ) + '</div>';
-					html += '<div class="itemName">' + itemList[ index ].name + ( settings.showRarity === true ? ' ( ' + itemList[ index ].rarity + ' )' : '' ) + '</div>';
-				html += '</div>';
+			if ( html.indexOf( itemList[ index ].name ) === -1 ){
+				if ( settings.ignoreLowest !== true || ( settings.sortByCrafted === true && typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].craftedValue : itemList[ index ].value ) !== dataSet.values[ 0 ] ){
+					html += '<div class="itemRow valueStyle' + ( settings.sortByCrafted === true && typeof itemList[ index ].craftedValue === 'number' ? itemList[ index ].craftedValue : ( typeof itemList[ index ].value === 'undefined' ? 'NA' : itemList[ index ].value ) ) + ( settings.showVaulted === true && itemList[ index ].vaulted === true ? ' vaulted' : '' ) + '">'
+						html += '<div class="itemValue">' + ( typeof itemList[ index ].craftedValue === 'number' && itemList[ index ].craftedValue !== itemList[ index ].value ? itemList[ index ].value + ' / ' + itemList[ index ].craftedValue : ( typeof itemList[ index ].value === 'undefined' ? 'N/A' : itemList[ index ].value ) ) + '</div>';
+						html += '<div class="itemName">' + itemList[ index ].name + ( settings.showRarity === true ? ' ( ' + itemList[ index ].rarity + ' )' : '' ) + '</div>';
+					html += '</div>';
+				}
+			}
+			else if ( settings.showRarity === true ) {
+				let splitPoint = html.indexOf( itemList[ index ].name ) + itemList[ index ].name.length + 3;
+				html = html.slice( 0, splitPoint ) + itemList[ index ].rarity + ' / ' + html.slice( splitPoint );
 			}
 		}
 		html += '<div id="return" class="outline" data-value="' + currentTier + '">Back to ' + currentTier + '</div>';
