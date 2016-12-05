@@ -51,7 +51,7 @@ var currentTier = null;
 
 var content = {
 	'tier': function(){
-		$( '#tile' ).html( '<div class="text">Select a tier to begin:</div><div class="tier outline" data-value="Lith">LITH</div><div class="tier outline" data-value="Meso">MESO</div><div class="tier outline" data-value="Neo">NEO</div><div class="tier outline" data-value="Axi">AXI</div>' );
+		$( '#tile' ).html( '<div class="text">Select a tier to begin:</div><div class="tier outline" data-value="Lith">LITH</div><div class="tier outline" data-value="Meso">MESO</div><div class="tier outline" data-value="Neo">NEO</div><div class="tier outline" data-value="Axi">AXI</div><div class="tier outline" data-value="Primes">Primes</div>' );
 		currentTier = null;
 	},
 	'info': function(){
@@ -125,13 +125,31 @@ var content = {
 		}
 		html += '<div id="return" class="outline" data-value="' + currentTier + '">Back to ' + currentTier + '</div>';
 		$( '#tile' ).html( html );
+	},
+	'primeList': function(){
+		let list = Object.keys( dataSet.primes ).sort();
+		let html = '<div class="text">Select a prime to list relics:</div>';
+		for ( let index = 0; index < list.length; index++ ) html += '<div class="prime outline" data-value="' + list[ index ] + '">' + list[ index ] + '</div>';
+		$( '#tile' ).html( html );
+	},
+	'primeLocations': function( prime ){
+		let html = '<div class="text">Relics for ' + prime + '</div>';
+		for ( let index = 0; index < dataSet.primes[ prime ].length; index++ ){
+			html += '<div class="itemRow' + ( settings.showVaulted === true && dataSet.primes[ prime ][ index ].vaulted === true ? ' vaulted' : '' ) + '">';
+				html += '<div class="itemName">' + dataSet.primes[ prime ][ index ].name + '</div>';
+				html += '<div class="itemName">' + dataSet.primes[ prime ][ index ].relic + ( settings.showRarity === true ? ' ( ' + dataSet.primes[ prime ][ index ].rarity + ' )' : '' ) + '</div>';
+			html += '</div>';
+		}
+		html += '<div id="return" class="outline" data-value="Primes">Back to prime list</div>';
+		$( '#tile' ).html( html );
 	}
 };
 
 $( document ).ready( function(){
 	$( '#tile' ).on( 'click', '.tier,#return', function( event ){
 		event.preventDefault();
-		content.relicList( $( this ).attr( 'data-value' ) );
+		if ( $( this ).attr( 'data-value' ) === 'Primes' ) content.primeList();
+		else content.relicList( $( this ).attr( 'data-value' ) );
 	});
 
 	$( '#tile' ).on( 'click', '.relic', function( event ){
@@ -140,6 +158,7 @@ $( document ).ready( function(){
 		if ( $( '.selected' ).length === 4 ) content.listing();
 	});
 
+	
 	$( '#tile' ).on( 'click', '#go', function( event ){
 		event.preventDefault();
 		if ( $( '.selected' ).length > 0 ) content.listing();
@@ -149,6 +168,11 @@ $( document ).ready( function(){
 		event.preventDefault();
 		$( '.relic' ).addClass( 'selected' );
 		content.listing();
+	});
+
+	$( '#tile' ).on( 'click', '.prime', function( event ){
+		event.preventDefault();
+		content.primeLocations( $( this ).attr( 'data-value' ) );
 	});
 
 	$( '#tile' ).on( 'click', '.option', function( event ){

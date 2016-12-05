@@ -14,6 +14,8 @@ body { font-family: Calibri, Verdana, Tahoma, Optima, Arial, sans-serif; }
 .option { background-color: honeydew; cursor: pointer; }
 .active { background-color: lightgreen; }
 
+.prime { font-size: 24px; cursor: pointer; text-align: center; }
+
 .relic { font-size: 24px; cursor: pointer; text-align: center; }
 .info { font-size: 12px; }
 .selected { background-color: lightgreen; }
